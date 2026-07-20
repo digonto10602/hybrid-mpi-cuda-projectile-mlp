@@ -1,5 +1,12 @@
 # Benchmark results
 
+## Latest scaling result
+
+The validated 20,000-sample, batch-256, 1,000-epoch experiment is documented
+in `N20000_EPOCH1000_BENCHMARK_RESULTS.md`. OpenMP with 8 threads was fastest
+at 2.51841720 s; MPI with 4 ranks took 2.59276995 s, single-GPU CUDA took
+4.47819356 s, and the best true CPU+GPU topology took 8.44690897 s.
+
 ## Outcome
 
 The best production training topology on the measured workstation was the

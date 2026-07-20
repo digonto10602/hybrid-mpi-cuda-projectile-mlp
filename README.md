@@ -16,6 +16,10 @@ Batch 64 remains the production default. A separately labeled batch-256
 scaling experiment is available with `--batch-size 256`; measured results are
 in `BATCH_256_BENCHMARK_RESULTS.md`.
 
+A second scaling experiment uses 20,000 generated samples, batch 256, and
+1,000 epochs. OpenMP with 8 threads was fastest on the measured workstation.
+See `N20000_EPOCH1000_BENCHMARK_RESULTS.md` and the matching CSV files.
+
 ## Hybrid design
 
 The hybrid executable supports these topology names:
@@ -112,6 +116,7 @@ CLI also accepts:
 --topology cpu-master|gpu-master|cpu-only|gpu-only|gpu-allreduce
 --cpu-threads N
 --batch-size N
+--epochs N
 --load-balance static|calibrated|adaptive
 --comm reduce-bcast|allreduce
 --gpu-aware-mpi auto|on|off
@@ -125,6 +130,14 @@ Run batch 256 without changing the default:
 ./mlp_eigen_sequential projectile_dataset_n4000_data1_split1_dt0p02.csv --batch-size 256
 BATCH_SIZE=256 scripts/run_hybrid_autotune.sh
 BATCH_SIZE=256 scripts/run_hybrid_full.sh
+```
+
+Run the 20,000-sample, 1,000-epoch experiment without changing the defaults:
+
+```bash
+DATASET=$PWD/projectile_dataset_n20000_data1_split1_dt0p02.csv
+./mlp_openmp "$DATASET" 8 --batch-size 256 --epochs 1000
+DATASET="$DATASET" BATCH_SIZE=256 EPOCHS=1000 scripts/run_hybrid_autotune.sh
 ```
 
 ## Timing and correctness
@@ -142,6 +155,10 @@ reproducibility, finite metrics, baseline improvement, and gathered inference
 order. See `HYBRID_MPI_CUDA_VALIDATION_REPORT.md`, `BENCHMARK_RESULTS.md`,
 `BATCH_256_BENCHMARK_RESULTS.md`, and the result CSV files for the measured
 workstation results.
+
+The 20,000-sample dataset is included with SHA-256
+`a2c1f2d30ab1eca79213ccc010e344d4ab1675b4c4e5ed9e8d63960e18320047`.
+Its dedicated comparison is in `N20000_EPOCH1000_BENCHMARK_RESULTS.md`.
 
 ## Important limitations
 

@@ -44,6 +44,7 @@ struct Options {
     bool validate_only = false;
     int cpu_threads = 1;
     std::size_t batch_size = 64;
+    std::size_t epochs = 300;
 };
 
 struct Components {
@@ -100,6 +101,11 @@ Options parse_options(int argc, char** argv) {
             const int batch_size = std::stoi(value(option, argument));
             if (batch_size < 1) throw std::invalid_argument("Batch size must be positive.");
             options.batch_size = static_cast<std::size_t>(batch_size);
+        }
+        else if (option == "--epochs") {
+            const int epochs = std::stoi(value(option, argument));
+            if (epochs < 1) throw std::invalid_argument("Epoch count must be positive.");
+            options.epochs = static_cast<std::size_t>(epochs);
         }
         else if (option == "--smoke-test") options.smoke = true;
         else if (option == "--autotune") options.autotune = true;
@@ -588,6 +594,7 @@ int main(int argc, char** argv) {
         Config config;
         config.dataset_path = options.dataset;
         config.batch_size = options.batch_size;
+        config.epochs = options.epochs;
         if (options.smoke || options.autotune || options.validate_only) {
             config.smoke_test = true;
             config.epochs = options.validate_only ? 1U : 2U;
@@ -644,8 +651,12 @@ int main(int argc, char** argv) {
         TargetStandardizer y_scaler;
         const Dataset scaled = standardize_dataset(raw, X_scaler, y_scaler);
         const double load_seconds = now_seconds() - load_start;
-        if (raw.train.X.rows() != 2800 || raw.validation.X.rows() != 600 || raw.test.X.rows() != 600)
-            throw std::runtime_error("Expected stored split counts 2800/600/600.");
+        const Eigen::Index total_samples = raw.train.X.rows() + raw.validation.X.rows() + raw.test.X.rows();
+        const Eigen::Index expected_train = total_samples * 70 / 100;
+        const Eigen::Index expected_validation = total_samples * 15 / 100;
+        if (raw.train.X.rows() != expected_train || raw.validation.X.rows() != expected_validation ||
+            raw.test.X.rows() != total_samples - expected_train - expected_validation)
+            throw std::runtime_error("Expected stored 70/15/15 split counts.");
 
         const int maximum_gpu_rows = std::max<int>(static_cast<int>(config.batch_size),
             std::max<int>(static_cast<int>(scaled.validation.X.rows()), static_cast<int>(scaled.test.X.rows())));
@@ -664,8 +675,10 @@ int main(int argc, char** argv) {
                 << "Topology=" << options.topology << " ranks=" << world_size
                 << " cpu_threads=" << options.cpu_threads << " load_balance=" << options.load_balance
                 << " batch_size=" << config.batch_size
+                << " epochs=" << config.epochs
                 << " comm=" << options.communication << " overlap=" << (options.overlap ? "on" : "off") << '\n'
-                << "Dataset splits=2800/600/600 load_and_standardize=" << load_seconds << " s\n"
+                << "Dataset splits=" << raw.train.X.rows() << '/' << raw.validation.X.rows() << '/'
+                << raw.test.X.rows() << " load_and_standardize=" << load_seconds << " s\n"
                 << "Calibration throughput by rank:";
             for (const double throughput : throughputs) std::cout << ' ' << throughput;
             std::cout << '\n';

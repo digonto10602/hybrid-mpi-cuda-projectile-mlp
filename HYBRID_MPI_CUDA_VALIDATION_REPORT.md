@@ -1,5 +1,18 @@
 # Hybrid MPI + CUDA validation report
 
+## 20,000-sample / 1,000-epoch update (2026-07-20)
+
+Status: **PASS WITH WARNINGS**. The new dataset has 14,000/3,000/3,000 stored
+train/validation/test samples and SHA-256
+`a2c1f2d30ab1eca79213ccc010e344d4ab1675b4c4e5ed9e8d63960e18320047`.
+All reference and hybrid smoke tests passed at batch 256. Full 1,000-epoch,
+three-repetition runs passed for sequential Eigen, OpenMP (1/2/4/8/16/20
+threads), MPI (1/2/4 ranks), CUDA, and seven hybrid configurations. OpenMP
+with 8 threads was fastest overall at 2.51841720 s; the best true CPU+GPU mode
+took 8.44690897 s because communication dominated this small model. ASan,
+UBSan, CUDA memcheck, racecheck, and initcheck passed. Full results and exact
+reproduction commands are in `N20000_EPOCH1000_BENCHMARK_RESULTS.md`.
+
 Date: 2026-07-20
 Overall status: **PASS WITH WARNINGS**
 

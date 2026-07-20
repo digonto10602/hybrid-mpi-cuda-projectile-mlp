@@ -115,6 +115,22 @@ inline void apply_command_line_mode(
             }
 
             config.batch_size = static_cast<std::size_t>(batch_size);
+        } else if (option == "--epochs") {
+            if (argument + 1 >= argc) {
+                throw std::invalid_argument(
+                    "--epochs requires a positive integer."
+                );
+            }
+
+            const int epochs = std::stoi(argv[++argument]);
+
+            if (epochs < 1) {
+                throw std::invalid_argument(
+                    "--epochs requires a positive integer."
+                );
+            }
+
+            config.epochs = static_cast<std::size_t>(epochs);
         }
     }
 }
