@@ -1,5 +1,10 @@
 # Hybrid MPI + CUDA projectile-surrogate MLP
 
+**Validation status: PASS WITH WARNINGS.** See the
+[full validation and benchmark report](FULL_VALIDATION_AND_BENCHMARK_REPORT.md)
+for the complete environment, correctness, sanitizer, accuracy, timing, fixes,
+and reproduction record.
+
 This repository trains a float32 neural surrogate for projectile range,
 `(v0, theta, drag) -> range`, and compares sequential Eigen, OpenMP, pure MPI,
 single-GPU CUDA, and synchronous heterogeneous MPI + CUDA implementations.
@@ -19,6 +24,18 @@ in `BATCH_256_BENCHMARK_RESULTS.md`.
 A second scaling experiment uses 20,000 generated samples, batch 256, and
 1,000 epochs. OpenMP with 8 threads was fastest on the measured workstation.
 See `N20000_EPOCH1000_BENCHMARK_RESULTS.md` and the matching CSV files.
+
+## Measured outcome
+
+| Workload | Fastest configuration | Median training time | Test RMSE |
+|---|---|---:|---:|
+| 4,000 samples, batch 64, 300 epochs | OpenMP, 4 threads | 0.36042566 s | 4.69281 |
+| 4,000 samples, batch 256, 300 epochs | OpenMP, 8 threads | 0.12788462 s | 5.72867 |
+| 20,000 samples, batch 256, 1,000 epochs | OpenMP, 8 threads | **2.51841720 s** | 1.08077 |
+
+MPI with four ranks was close to OpenMP in the largest experiment at
+2.59276995 seconds. Single-GPU CUDA took 4.47819356 seconds, and the fastest
+true CPU+GPU hybrid took 8.44690897 seconds because communication dominated.
 
 ## Hybrid design
 
@@ -155,6 +172,15 @@ reproducibility, finite metrics, baseline improvement, and gathered inference
 order. See `HYBRID_MPI_CUDA_VALIDATION_REPORT.md`, `BENCHMARK_RESULTS.md`,
 `BATCH_256_BENCHMARK_RESULTS.md`, and the result CSV files for the measured
 workstation results.
+
+Documentation index:
+
+- `FULL_VALIDATION_AND_BENCHMARK_REPORT.md`: consolidated authoritative report.
+- `HYBRID_MPI_CUDA_VALIDATION_REPORT.md`: hybrid correctness details.
+- `BENCHMARK_RESULTS.md`: default batch-64 results.
+- `BATCH_256_BENCHMARK_RESULTS.md`: 4,000-sample batch-256 experiment.
+- `N20000_EPOCH1000_BENCHMARK_RESULTS.md`: 20,000-sample, 1,000-epoch experiment.
+- `benchmark_results*.csv` and `accuracy_results*.csv`: machine-readable data.
 
 The 20,000-sample dataset is included with SHA-256
 `a2c1f2d30ab1eca79213ccc010e344d4ab1675b4c4e5ed9e8d63960e18320047`.
