@@ -1,0 +1,15 @@
+*.o
+mlp_eigen_sequential
+mlp_openmp
+mlp_mpi
+mlp_cuda
+hybrid_mpi_cuda
+*_debug
+*_asan
+*_tsan
+core
+core.*
+*.nsys-rep
+*.qdrep
+validation_logs/
+hybrid_run_accuracy.csv
