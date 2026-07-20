@@ -99,6 +99,22 @@ inline void apply_command_line_mode(
 
             config.hidden1 = hidden_size;
             config.hidden2 = hidden_size;
+        } else if (option == "--batch-size") {
+            if (argument + 1 >= argc) {
+                throw std::invalid_argument(
+                    "--batch-size requires a positive integer."
+                );
+            }
+
+            const int batch_size = std::stoi(argv[++argument]);
+
+            if (batch_size < 1) {
+                throw std::invalid_argument(
+                    "--batch-size requires a positive integer."
+                );
+            }
+
+            config.batch_size = static_cast<std::size_t>(batch_size);
         }
     }
 }

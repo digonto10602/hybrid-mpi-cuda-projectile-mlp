@@ -5,6 +5,7 @@ root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 default_dataset="$root/projectile_dataset_n4000_data1_split1_dt0p02.csv"
 [[ -f $default_dataset ]] || default_dataset="$root/../projectile_dataset_n4000_data1_split1_dt0p02.csv"
 dataset=${DATASET:-$default_dataset}
+batch_size=${BATCH_SIZE:-64}
 cores=$(nproc)
 mkdir -p "$root/validation_logs"
 cd "$root"
@@ -17,7 +18,7 @@ run_candidate() {
     local log="validation_logs/autotune_${topology}_np${ranks}_t${threads}.log"
     mpirun --bind-to none -np "$ranks" ./hybrid_mpi_cuda "$dataset" \
         --topology "$topology" --cpu-threads "$threads" --load-balance calibrated \
-        --comm reduce-bcast --autotune | tee "$log"
+        --comm reduce-bcast --batch-size "$batch_size" --autotune | tee "$log"
     sed -n 's/^RESULT_CSV,//p' "$log" >> "$results"
 }
 

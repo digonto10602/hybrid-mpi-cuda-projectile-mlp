@@ -45,6 +45,10 @@ CUDA rows are `PASS WITH WARNINGS` because nvcc emits warnings from Eigen
 headers, not from project code. Exact values are in `benchmark_results.csv` and
 `accuracy_results.csv`.
 
+The separately labeled global-batch-256 experiment is documented in
+`BATCH_256_BENCHMARK_RESULTS.md`; exact values are in
+`benchmark_results_batch256.csv` and `accuracy_results_batch256.csv`.
+
 ## Scaling
 
 Using sequential Eigen as `T1`, OpenMP speedup/efficiency is 1.069/53.5% at two

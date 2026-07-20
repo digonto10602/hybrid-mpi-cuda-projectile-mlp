@@ -12,6 +12,10 @@ The benchmark is intentionally small. Communication and kernel-launch overhead
 can dominate useful work, so the autotuner may correctly recommend fewer
 resources or a CPU-only topology.
 
+Batch 64 remains the production default. A separately labeled batch-256
+scaling experiment is available with `--batch-size 256`; measured results are
+in `BATCH_256_BENCHMARK_RESULTS.md`.
+
 ## Hybrid design
 
 The hybrid executable supports these topology names:
@@ -26,7 +30,7 @@ The hybrid executable supports these topology names:
   distinct visible GPU per local rank.
 
 For each global batch, active workers receive disjoint contiguous sample ranges.
-Each local gradient is divided by global batch size 64, packed in
+Each local gradient is divided by the configured global batch size, packed in
 `W1,b1,W2,b2,W3,b3` order, and summed. The packed parameter and gradient counts
 are asserted to be exactly 4,481. `reduce-bcast` performs exactly one Adam
 update on the master. `allreduce` is a reference mode with identical host Adam
@@ -107,11 +111,20 @@ CLI also accepts:
 ```text
 --topology cpu-master|gpu-master|cpu-only|gpu-only|gpu-allreduce
 --cpu-threads N
+--batch-size N
 --load-balance static|calibrated|adaptive
 --comm reduce-bcast|allreduce
 --gpu-aware-mpi auto|on|off
 --overlap off|on
 --autotune
+```
+
+Run batch 256 without changing the default:
+
+```bash
+./mlp_eigen_sequential projectile_dataset_n4000_data1_split1_dt0p02.csv --batch-size 256
+BATCH_SIZE=256 scripts/run_hybrid_autotune.sh
+BATCH_SIZE=256 scripts/run_hybrid_full.sh
 ```
 
 ## Timing and correctness
@@ -126,8 +139,9 @@ Validation starts from identical CPU-initialized parameters and checks GPU
 forward predictions, all six GPU gradient groups, the reduced heterogeneous
 global gradient, exact sample coverage, parameter replica spread, repeated-run
 reproducibility, finite metrics, baseline improvement, and gathered inference
-order. See `HYBRID_MPI_CUDA_VALIDATION_REPORT.md`, `BENCHMARK_RESULTS.md`, and
-the three result CSV files for the measured workstation results.
+order. See `HYBRID_MPI_CUDA_VALIDATION_REPORT.md`, `BENCHMARK_RESULTS.md`,
+`BATCH_256_BENCHMARK_RESULTS.md`, and the result CSV files for the measured
+workstation results.
 
 ## Important limitations
 

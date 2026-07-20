@@ -43,6 +43,7 @@ struct Options {
     bool autotune = false;
     bool validate_only = false;
     int cpu_threads = 1;
+    std::size_t batch_size = 64;
 };
 
 struct Components {
@@ -95,12 +96,18 @@ Options parse_options(int argc, char** argv) {
         else if (option == "--gpu-aware-mpi") options.gpu_aware_mpi = value(option, argument);
         else if (option == "--overlap") options.overlap = value(option, argument) == "on";
         else if (option == "--cpu-threads") options.cpu_threads = std::stoi(value(option, argument));
+        else if (option == "--batch-size") {
+            const int batch_size = std::stoi(value(option, argument));
+            if (batch_size < 1) throw std::invalid_argument("Batch size must be positive.");
+            options.batch_size = static_cast<std::size_t>(batch_size);
+        }
         else if (option == "--smoke-test") options.smoke = true;
         else if (option == "--autotune") options.autotune = true;
         else if (option == "--validate-only") options.validate_only = true;
         else throw std::invalid_argument("Unknown option: " + option);
     }
     if (options.cpu_threads < 1) throw std::invalid_argument("CPU thread count must be positive.");
+    if (options.batch_size < 1) throw std::invalid_argument("Batch size must be positive.");
     if (options.load_balance != "static" && options.load_balance != "calibrated" && options.load_balance != "adaptive")
         throw std::invalid_argument("Invalid --load-balance value.");
     if (options.communication != "reduce-bcast" && options.communication != "allreduce")
@@ -348,7 +355,8 @@ void validate_topology(
         if (!difference.passed) throw std::runtime_error("Reduced global gradient correctness check failed.");
         const int assigned = std::accumulate(allocation.counts.begin(), allocation.counts.end(), 0);
         if (assigned != static_cast<int>(config.batch_size)) throw std::runtime_error("Sample assignment audit failed.");
-        std::cout << "Sample assignment audit: 64 unique contiguous slots, PASS\n";
+        std::cout << "Sample assignment audit: " << config.batch_size
+            << " unique contiguous slots, PASS\n";
     }
     MPI_Barrier(MPI_COMM_WORLD);
 }
@@ -579,6 +587,7 @@ int main(int argc, char** argv) {
         Options options = parse_options(argc, argv);
         Config config;
         config.dataset_path = options.dataset;
+        config.batch_size = options.batch_size;
         if (options.smoke || options.autotune || options.validate_only) {
             config.smoke_test = true;
             config.epochs = options.validate_only ? 1U : 2U;
@@ -606,7 +615,7 @@ int main(int argc, char** argv) {
         const std::vector<int> active = active_flags(role, world_size);
         const int active_workers = std::accumulate(active.begin(), active.end(), 0);
         if (active_workers < 1 || active_workers > static_cast<int>(config.batch_size))
-            throw std::runtime_error("Active worker count is invalid for global batch 64.");
+            throw std::runtime_error("Active worker count is invalid for the global batch.");
         int cpu_workers = role == Role::cpu_worker ? 1 : 0;
         MPI_Allreduce(MPI_IN_PLACE, &cpu_workers, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
         const int reserved = world_size - cpu_workers;
@@ -654,6 +663,7 @@ int main(int argc, char** argv) {
                 << "HYBRID MPI+CUDA PROJECTILE MLP\n"
                 << "Topology=" << options.topology << " ranks=" << world_size
                 << " cpu_threads=" << options.cpu_threads << " load_balance=" << options.load_balance
+                << " batch_size=" << config.batch_size
                 << " comm=" << options.communication << " overlap=" << (options.overlap ? "on" : "off") << '\n'
                 << "Dataset splits=2800/600/600 load_and_standardize=" << load_seconds << " s\n"
                 << "Calibration throughput by rank:";
